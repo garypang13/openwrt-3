@@ -199,6 +199,10 @@ default_prerm() {
 		fi
 	done
 
+	grep -q '"nas",' /usr/lib/lua/luci/controller/*.lua ||
+		sed -i '/_("NAS")/d' /usr/lib/lua/luci/controller/turboacc.lua
+		rm -Rf /tmp/luci-*
+
 	return $ret
 }
 
@@ -250,6 +254,9 @@ default_postinst() {
 		ret=$?
 	fi
 
+	grep -q '"nas",' /usr/lib/lua/luci/controller/*.lua && ! grep -q '_("NAS")' /usr/lib/lua/luci/controller/*.lua &&
+		sed -i 's/local page/local page\nentry({"admin", "nas"}, firstchild(), _("NAS") , 45).dependent = false/' /usr/lib/lua/luci/controller/turboacc.lua
+
 	if [ -d "$root/rootfs-overlay" ]; then
 		cp -R $root/rootfs-overlay/. $root/
 		rm -fR $root/rootfs-overlay/
@@ -272,7 +279,7 @@ default_postinst() {
 			uci commit
 		fi
 
-		rm -f /tmp/luci-indexcache
+		rm -Rf /tmp/luci-*
 	fi
 
 	local shell="$(command -v bash)"
@@ -286,6 +293,8 @@ default_postinst() {
 			"$i" start
 		fi
 	done
+
+	/etc/init.d/ucitrack reload
 
 	return $ret
 }
